@@ -1,10 +1,9 @@
 const jwt = require('jsonwebtoken');
 const {User} = require('../models');
+const {JWT_SECRET} = require('../utils/auth');
 
 const authMiddlware = async (req, res, next) => {
   const authHeader = req.headers.authorization;
-
-  console.log('Auth header', authHeader);
 
   if (!authHeader) {
     return res.status(401).json({
@@ -14,8 +13,6 @@ const authMiddlware = async (req, res, next) => {
 
   const token = authHeader.split(' ')[1];
 
-  console.log(token);
-
   if (!token) {
     return res.status(401).json({
       message: 'Invalid Token',
@@ -23,10 +20,17 @@ const authMiddlware = async (req, res, next) => {
   }
 
   try {
-    const payload = jwt.verify(token, process.env.JWT_SECRET);
-    console.log(payload);
+    const payload = jwt.verify(token, JWT_SECRET);
+
+    // Ensure it's not a refresh token
+    if (payload.type === 'refresh') {
+      return res.status(401).json({
+        message: 'Invalid token type. Access token required.',
+      });
+    }
+
     const user = await User.findByPk(payload.sub);
-    console.log('000000', user);
+
     if (!user) {
       return res.status(401).json({
         message: 'User not found',
@@ -38,11 +42,11 @@ const authMiddlware = async (req, res, next) => {
       email: user.email,
       role: user.role,
     };
-    console.log('000000', req.user);
+
     next();
   } catch (err) {
     return res.status(401).json({
-      message: 'Invalid or expire token',
+      message: 'Invalid or expired token',
     });
   }
 };
