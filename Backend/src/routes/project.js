@@ -44,4 +44,43 @@ projectRoutes.get('/:id', authMiddlware, async (req, res) => {
   }
 });
 
+projectRoutes.put('/:id', authMiddlware, async (req, res) => {
+  try {
+    const id = req.params.id;
+    const project = await Project.findByPk(id);
+    if (!project) {
+      return res.status(400).json({message: 'Project not found'});
+    }
+
+    const {name, location} = req.body;
+
+    const updateData = {};
+    if (name) updateData.project_name = name;
+    if (location) updateData.location = location;
+
+    await project.update(updateData);
+
+    return res.json({msg: 'Successfully updated', project});
+  } catch (err) {
+    console.log(err);
+    return res.status(500).json({message: 'server error'});
+  }
+});
+
+projectRoutes.delete('/:id', authMiddlware, async (req, res) => {
+  try {
+    const id = req.params.id;
+    const project = await Project.findByPk(id);
+    if (!project) {
+      return res.status(400).json({message: 'Project not found'});
+    }
+
+    await project.destroy();
+
+    return res.status(204).json({msg: 'Successfully Delete'});
+  } catch (err) {
+    return res.status(500).json({message: 'server error'});
+  }
+});
+
 module.exports = {projectRoutes};
