@@ -3,6 +3,7 @@ const express = require('express');
 const {Incident, User, IncidentAttachment, Project} = require('../models/');
 const authMiddlware = require('../middleware/auth');
 const upload = require('../middleware/upload');
+const authorzie = require('../middleware/authorize');
 
 const incidentRoutes = express.Router();
 
@@ -57,71 +58,81 @@ incidentRoutes.get('/:id', authMiddlware, async (req, res) => {
   }
 });
 
-incidentRoutes.post('/', authMiddlware, async (req, res) => {
-  try {
-    const {title, description, project_id, severity, status} = req.body;
+incidentRoutes.post(
+  '/',
+  authMiddlware,
+  authorzie('admin', 'manager'),
+  async (req, res) => {
+    try {
+      const {title, description, project_id, severity, status} = req.body;
 
-    if (!title || !project_id) {
-      return res
-        .status(400)
-        .json({message: 'Title and project_id are required'});
-    }
+      if (!title || !project_id) {
+        return res
+          .status(400)
+          .json({message: 'Title and project_id are required'});
+      }
 
-    // Check project exists
+      // Check project exists
 
-    const project = await Project.findByPk(project_id);
+      const project = await Project.findByPk(project_id);
 
-    if (!project) {
-      return res.status(400).json({message: 'project doesnt found'});
-    }
+      if (!project) {
+        return res.status(400).json({message: 'project doesnt found'});
+      }
 
-    const incident = await Incident.create({
-      title,
-      description,
-      project_id,
-      reported_by: req.user.id,
-      severity: severity || 'low',
-      status: status || 'open',
-      reported_on: new Date(),
-    });
-
-    return res.status(201).json({
-      message: 'Incident created successfully',
-      incident_id: incident.incident_id,
-    });
-  } catch (err) {
-    console.error('List incident error', err);
-    return res.status(500).json({message: 'server error'});
-  }
-});
-
-incidentRoutes.delete('/:id', authMiddlware, async (req, res) => {
-  try {
-    const id = req.params.id;
-    const incident = await Incident.findByPk(id);
-
-    if (!incident) {
-      return res.status(404).json({
-        message: 'Incident not found',
+      const incident = await Incident.create({
+        title,
+        description,
+        project_id,
+        reported_by: req.user.id,
+        severity: severity || 'low',
+        status: status || 'open',
+        reported_on: new Date(),
       });
+
+      return res.status(201).json({
+        message: 'Incident created successfully',
+        incident_id: incident.incident_id,
+      });
+    } catch (err) {
+      console.error('List incident error', err);
+      return res.status(500).json({message: 'server error'});
     }
-
-    // Permission Check
-    if (incident.reported_by != req.user.id || req.user.role != 'admin') {
-      return res.status(403).json({message: 'not allowed '});
-    }
-
-    await IncidentAttachment.destroy({
-      where: {incident_id: incident.incident_id},
-    });
-    await incident.destroy();
-
-    res.json({message: 'Incident deleted successfully'});
-  } catch (err) {
-    console.error('List incident error', err);
-    return res.status(500).json({message: 'server error'});
   }
-});
+);
+
+incidentRoutes.delete(
+  '/:id',
+  authMiddlware,
+  authorzie('admin', 'manager'),
+  async (req, res) => {
+    try {
+      const id = req.params.id;
+      const incident = await Incident.findByPk(id);
+
+      if (!incident) {
+        return res.status(404).json({
+          message: 'Incident not found',
+        });
+      }
+
+      // Permission Check
+      if (incident.reported_by != req.user.id || req.user.role != 'admin') {
+        return res.status(403).json({message: 'not allowed '});
+      }
+
+      await IncidentAttachment.destroy({
+        where: {incident_id: incident.incident_id},
+      });
+      await incident.destroy();
+
+      res.json({message: 'Incident deleted successfully'});
+    } catch (err) {
+      console.error('List incident error', err);
+      return res.status(500).json({message: 'server error'});
+    }
+  }
+);
 
 incidentRoutes.post(
   '/:id/attachment',
