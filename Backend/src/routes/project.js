@@ -2,12 +2,13 @@ const express = require('express');
 
 const {Project} = require('../models/');
 const authMiddlware = require('../middleware/auth');
+const authorize = require('../middleware/authorize');
 const projectRoutes = express.Router();
 
 projectRoutes.post(
   '/',
   authMiddlware,
-  authorzie('admin', 'manager'),
+  authorize('admin', 'manager'),
   async (req, res) => {
     try {
       const {name, location} = req.body;
@@ -52,7 +53,7 @@ projectRoutes.get('/:id', authMiddlware, async (req, res) => {
 projectRoutes.put(
   '/:id',
   authMiddlware,
-  authorzie('admin', 'manager'),
+  authorize('admin', 'manager'),
   async (req, res) => {
     try {
       const id = req.params.id;
@@ -80,7 +81,7 @@ projectRoutes.put(
 projectRoutes.delete(
   '/:id',
   authMiddlware,
-  authorzie('admin', 'manager'),
+  authorize('admin', 'manager'),
   async (req, res) => {
     try {
       const id = req.params.id;

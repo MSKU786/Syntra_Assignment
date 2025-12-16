@@ -1,5 +1,5 @@
-const authorzie = (...allowedRoles) => {
-  return (res, res, next) => {
+const authorize = (...allowedRoles) => {
+  return (req, res, next) => {
     if (!req.user) {
       return res.status(401).json({
         message: 'Authentication Required',
@@ -16,4 +16,4 @@ const authorzie = (...allowedRoles) => {
   };
 };
 
-module.exports = authorzie;
+module.exports = authorize;

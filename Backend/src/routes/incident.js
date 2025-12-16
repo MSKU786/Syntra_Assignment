@@ -4,6 +4,7 @@ const {Incident, User, IncidentAttachment, Project} = require('../models/');
 const authMiddlware = require('../middleware/auth');
 const upload = require('../middleware/upload');
 const authorzie = require('../middleware/authorize');
+const authorize = require('../middleware/authorize');
 
 const incidentRoutes = express.Router();
 
@@ -61,7 +62,7 @@ incidentRoutes.get('/:id', authMiddlware, async (req, res) => {
 incidentRoutes.post(
   '/',
   authMiddlware,
-  authorzie('admin', 'manager'),
+  authorize('admin', 'manager'),
   async (req, res) => {
     try {
       const {title, description, project_id, severity, status} = req.body;
